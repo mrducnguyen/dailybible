@@ -4,10 +4,12 @@ import { defineConfig } from 'vite';
 export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/dailybible/' : '/',
   plugins: [sveltekit()],
-  optimizeDeps: {
-    exclude: ['sql.js']
-  },
+
   server: {
+    watch: {
+      usePolling: true,
+      interval: 300
+    },
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp'

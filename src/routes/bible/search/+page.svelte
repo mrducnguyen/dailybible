@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { scriptureDb } from '$lib/db/scripture';
+  import { searchVerses } from '$lib/search';
   import type { ScriptureVerse } from '$lib/types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -16,7 +16,7 @@
     searching = true;
     searched = true;
     try {
-      results = await scriptureDb.search(query, translation);
+      results = await searchVerses(query, translation);
     } finally {
       searching = false;
     }

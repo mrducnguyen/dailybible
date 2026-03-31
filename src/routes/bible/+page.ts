@@ -10,6 +10,7 @@ export const load: PageLoad = async () => {
     const nt = books.filter(b => b.testament === 'NT');
     return { ot, nt, loading: false, error: null };
   } catch (e) {
-    return { ot: [], nt: [], loading: false, error: 'Could not load books.' };
+    console.error('[bible] load error:', e);
+    return { ot: [], nt: [], loading: false, error: String(e) };
   }
 };

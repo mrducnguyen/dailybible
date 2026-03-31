@@ -44,14 +44,5 @@
       </section>
     {/each}
 
-    <!-- Search shortcut -->
-    <div class="card p-4 flex items-center gap-4 bg-stone-50">
-      <span class="text-2xl">🔍</span>
-      <div class="flex-1">
-        <p class="font-medium text-stone-700">Search the Scriptures</p>
-        <p class="text-sm text-stone-500">Search by keyword in Latin or English</p>
-      </div>
-      <a href="/bible/search" class="btn-secondary">Search</a>
-    </div>
   {/if}
 </div>
