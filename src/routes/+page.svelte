@@ -5,6 +5,8 @@
 
   let { data } = $props<{ data: PageData }>();
   const entry = $derived(data.entry);
+  const readings = $derived(data.dayReadings?.readings ?? []);
+  const yearLabel = $derived(data.yearLabel ?? '');
 </script>
 
 <svelte:head><title>Daily Bible — Today</title></svelte:head>
@@ -34,8 +36,40 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-8">
+  <!-- Today's Lectionary Readings -->
+  {#if readings.length > 0}
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="font-serif text-lg font-semibold text-stone-800">Today's Mass Readings</h2>
+          <p class="text-xs text-stone-400 mt-0.5">{yearLabel}</p>
+        </div>
+        <a href="/lectionary" class="btn-secondary text-sm py-1.5 px-3">View all →</a>
+      </div>
+      <div class="space-y-2">
+        {#each readings as reading}
+          <a href="/bible/{reading.bookCode}/{reading.segments[0]?.chapterStart ?? 1}"
+            class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-stone-50 transition-colors group">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-semibold uppercase tracking-wider text-stone-400 w-16 shrink-0">
+                {reading.role === 'psalm' ? 'Psalm' :
+                 reading.role === 'first' ? '1st Rdg' :
+                 reading.role === 'second' ? '2nd Rdg' : 'Gospel'}
+              </span>
+              <span class="text-sm text-stone-700 group-hover:text-primary font-mono transition-colors">
+                {reading.citation}
+              </span>
+            </div>
+            <span class="text-stone-300 group-hover:text-primary transition-colors text-sm">›</span>
+          </a>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
     {#each [
+      { href: '/lectionary', icon: '📜', label: 'Mass Readings' },
       { href: '/bible', icon: '📖', label: 'Read the Bible' },
       { href: '/liturgy/calendar', icon: '📅', label: 'Liturgical Calendar' },
       { href: '/study', icon: '✏️', label: 'My Study Notes' }

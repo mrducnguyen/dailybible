@@ -63,4 +63,47 @@ export const scriptureDb = {
       } satisfies ScriptureVerse;
     });
   },
+
+  async getVerseRange(
+    bookCode: string,
+    chapterStart: number,
+    verseStart: number,
+    chapterEnd: number,
+    verseEnd: number
+  ): Promise<ScriptureVerse[]> {
+    const db = await getDb();
+    let res;
+    if (chapterStart === chapterEnd) {
+      res = db.exec(
+        'SELECT * FROM verses WHERE bookCode = ? AND chapter = ? AND verseNumber >= ? AND verseNumber <= ? ORDER BY verseNumber',
+        [bookCode.toUpperCase(), chapterStart, verseStart, verseEnd]
+      );
+    } else {
+      res = db.exec(
+        `SELECT * FROM verses WHERE bookCode = ?
+         AND (
+           (chapter = ? AND verseNumber >= ?) OR
+           (chapter > ? AND chapter < ?) OR
+           (chapter = ? AND verseNumber <= ?)
+         ) ORDER BY chapter, verseNumber`,
+        [bookCode.toUpperCase(), chapterStart, verseStart, chapterStart, chapterEnd, chapterEnd, verseEnd]
+      );
+    }
+    if (!res.length) return [];
+    const [{ columns, values }] = res;
+    return values.map(row => {
+      const obj: Record<string, unknown> = {};
+      columns.forEach((col, i) => (obj[col] = row[i]));
+      return {
+        id: obj.id as string,
+        bookId: obj.bookCode as string,
+        bookCode: obj.bookCode as string,
+        chapter: obj.chapter as number,
+        verseNumber: obj.verseNumber as number,
+        textEnglish: obj.textEnglish as string,
+        textLatin: obj.textLatin as string,
+        crossReferences: []
+      } satisfies ScriptureVerse;
+    });
+  },
 };

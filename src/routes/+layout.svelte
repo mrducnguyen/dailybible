@@ -9,6 +9,7 @@
 
   const navLinks = [
     { href: '/', label: 'Today', icon: '✝' },
+    { href: '/lectionary', label: 'Readings', icon: '📜' },
     { href: '/bible', label: 'Bible', icon: '📖' },
     { href: '/liturgy/calendar', label: 'Calendar', icon: '📅' },
     { href: '/study', label: 'Study', icon: '✏️' }
