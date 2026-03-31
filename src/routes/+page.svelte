@@ -1,12 +1,73 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import type { LectionaryReading, ScriptureVerse } from '$lib/types';
   import Badge from '$lib/components/ui/Badge.svelte';
+  import Spinner from '$lib/components/ui/Spinner.svelte';
   import { seasonVariant, formatDate } from '$lib/utils';
+  import { scriptureDb } from '$lib/db/scripture';
+  import { browser } from '$app/environment';
+  import { lang } from '$lib/stores/language';
 
   let { data } = $props<{ data: PageData }>();
   const entry = $derived(data.entry);
   const readings = $derived(data.dayReadings?.readings ?? []);
   const yearLabel = $derived(data.yearLabel ?? '');
+
+  type LoadedReading = { verses: ScriptureVerse[] } | null;
+  let loadedReadings: LoadedReading[] = $state([]);
+  let versesLoaded: boolean = $state(false);
+
+  $effect(() => {
+    if (!browser || readings.length === 0) {
+      loadedReadings = [];
+      versesLoaded = false;
+      return;
+    }
+    versesLoaded = false;
+    const current = readings;
+    Promise.all(
+      current.map(async (reading: LectionaryReading): Promise<LoadedReading> => {
+        try {
+          const allVerses: ScriptureVerse[] = [];
+          for (const seg of reading.segments) {
+            const verses = await scriptureDb.getVerseRange(
+              reading.bookCode,
+              seg.chapterStart,
+              seg.verseStart,
+              seg.chapterEnd,
+              seg.verseEnd
+            );
+            allVerses.push(...verses);
+          }
+          return { verses: allVerses };
+        } catch {
+          return null;
+        }
+      })
+    ).then(results => {
+      if (current === readings) {
+        loadedReadings = results;
+        versesLoaded = true;
+      }
+    });
+  });
+
+  const roleIcon: Record<string, string> = {
+    first: '✦', psalm: '♪', second: '✦', gospel: '✝',
+  };
+
+  const roleColor: Record<string, string> = {
+    first: 'border-l-amber-500',
+    psalm: 'border-l-blue-400',
+    second: 'border-l-amber-500',
+    gospel: 'border-l-primary',
+  };
+
+  function chapterLink(reading: LectionaryReading): string {
+    const seg = reading.segments[0];
+    if (!seg) return `/bible/${reading.bookCode}`;
+    return `/bible/${reading.bookCode}/${seg.chapterStart}`;
+  }
 </script>
 
 <svelte:head><title>Daily Bible — Today</title></svelte:head>
@@ -36,34 +97,50 @@
     </div>
   </div>
 
-  <!-- Today's Lectionary Readings -->
+  <!-- Today's Mass Readings -->
   {#if readings.length > 0}
-    <div class="card p-5">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="font-serif text-lg font-semibold text-stone-800">Today's Mass Readings</h2>
-          <p class="text-xs text-stone-400 mt-0.5">{yearLabel}</p>
-        </div>
-        <a href="/lectionary" class="btn-secondary text-sm py-1.5 px-3">View all →</a>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-serif text-xl font-semibold text-stone-800">Mass Readings</h2>
+        <span class="text-xs text-stone-400">{yearLabel}</span>
       </div>
-      <div class="space-y-2">
-        {#each readings as reading}
-          <a href="/bible/{reading.bookCode}/{reading.segments[0]?.chapterStart ?? 1}"
-            class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-stone-50 transition-colors group">
-            <div class="flex items-center gap-3">
-              <span class="text-xs font-semibold uppercase tracking-wider text-stone-400 w-16 shrink-0">
-                {reading.role === 'psalm' ? 'Psalm' :
-                 reading.role === 'first' ? '1st Rdg' :
-                 reading.role === 'second' ? '2nd Rdg' : 'Gospel'}
-              </span>
-              <span class="text-sm text-stone-700 group-hover:text-primary font-mono transition-colors">
-                {reading.citation}
-              </span>
+
+      {#each readings as reading, i (reading.role + i)}
+        <div class="card p-0 overflow-hidden border-l-4 {roleColor[reading.role] ?? 'border-l-stone-300'}">
+          <div class="p-4">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-stone-400 text-sm select-none">{roleIcon[reading.role] ?? '•'}</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">{reading.label}</span>
+              </div>
+              <span class="text-sm font-medium text-stone-700 font-mono">{reading.citation}</span>
             </div>
-            <span class="text-stone-300 group-hover:text-primary transition-colors text-sm">›</span>
-          </a>
-        {/each}
-      </div>
+
+            {#if !browser}
+              <!-- SSR: nothing -->
+            {:else if versesLoaded && loadedReadings[i]?.verses.length}
+              <p class="mt-3 text-stone-800 leading-relaxed text-[0.9375rem]">
+                {#each loadedReadings[i]!.verses as verse}
+                  <sup class="text-[0.65rem] font-semibold text-stone-400 mr-[1px] select-none align-super">{verse.verseNumber}</sup>{$lang === 'latin' ? verse.textLatin : verse.textEnglish}{' '}
+                {/each}
+              </p>
+            {:else if versesLoaded && !loadedReadings[i]?.verses.length}
+              <p class="mt-3 text-sm text-stone-400 italic">Passage not found in database.</p>
+            {:else if !versesLoaded}
+              <div class="mt-3 flex items-center gap-2 text-stone-400 text-sm">
+                <Spinner size="sm" />
+                <span>Loading…</span>
+              </div>
+            {/if}
+          </div>
+
+          <div class="border-t border-stone-100 px-4 py-2.5 bg-stone-50/60 flex justify-end">
+            <a href={chapterLink(reading)} class="btn-secondary text-xs py-1 px-3">
+              Read chapter →
+            </a>
+          </div>
+        </div>
+      {/each}
     </div>
   {/if}
 

@@ -1,52 +1,54 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import type { LectionaryReading } from '$lib/types';
+  import type { LectionaryReading, ScriptureVerse } from '$lib/types';
   import Badge from '$lib/components/ui/Badge.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import { seasonVariant, formatDate } from '$lib/utils';
   import { scriptureDb } from '$lib/db/scripture';
   import { browser } from '$app/environment';
+  import { lang } from '$lib/stores/language';
 
   let { data } = $props<{ data: PageData }>();
 
   const entry = $derived(data.entry);
   const readings = $derived(data.dayReadings?.readings ?? []);
 
-  type Preview = { text: string } | null;
-  let previews: Preview[] = $state([]);
-  let previewsLoaded: boolean = $state(false);
+  type LoadedReading = { verses: ScriptureVerse[] } | null;
+  let loadedReadings: LoadedReading[] = $state([]);
+  let versesLoaded: boolean = $state(false);
 
   $effect(() => {
     if (!browser || readings.length === 0) {
-      previews = [];
-      previewsLoaded = false;
+      loadedReadings = [];
+      versesLoaded = false;
       return;
     }
-    previewsLoaded = false;
+    versesLoaded = false;
     const current = readings;
     Promise.all(
-      current.map(async (reading: LectionaryReading): Promise<Preview> => {
-        const seg = reading.segments[0];
-        if (!seg) return null;
+      current.map(async (reading: LectionaryReading): Promise<LoadedReading> => {
         try {
-          const verses = await scriptureDb.getVerseRange(
-            reading.bookCode,
-            seg.chapterStart,
-            seg.verseStart,
-            seg.chapterStart,
-            seg.verseStart
-          );
-          if (!verses.length) return null;
-          return { text: verses[0].textEnglish };
+          const allVerses: ScriptureVerse[] = [];
+          for (const seg of reading.segments) {
+            const verses = await scriptureDb.getVerseRange(
+              reading.bookCode,
+              seg.chapterStart,
+              seg.verseStart,
+              seg.chapterEnd,
+              seg.verseEnd
+            );
+            allVerses.push(...verses);
+          }
+          return { verses: allVerses };
         } catch {
           return null;
         }
       })
     ).then(results => {
       if (current === readings) {
-        previews = results;
-        previewsLoaded = true;
+        loadedReadings = results;
+        versesLoaded = true;
       }
     });
   });
@@ -121,6 +123,7 @@
       {#each readings as reading, i (reading.role + i)}
         <div class="card p-0 overflow-hidden border-l-4 {roleColor[reading.role] ?? 'border-l-stone-300'}">
           <div class="p-4">
+            <!-- Header: role label + citation -->
             <div class="flex flex-wrap items-baseline justify-between gap-2">
               <div class="flex items-center gap-2">
                 <span class="text-stone-400 text-sm select-none">{roleIcon[reading.role] ?? '•'}</span>
@@ -128,32 +131,24 @@
                   {reading.label}
                 </span>
               </div>
-              <a href={chapterLink(reading)} class="text-sm font-medium text-primary hover:underline font-mono">
-                {reading.citation} →
-              </a>
+              <span class="text-sm font-medium text-stone-700 font-mono">{reading.citation}</span>
             </div>
 
+            <!-- Verses -->
             {#if !browser}
-              <!-- SSR: nothing extra -->
-            {:else if previewsLoaded && previews[i]}
-              <p class="mt-3 text-stone-700 leading-relaxed text-sm line-clamp-3 italic">
-                "{previews[i]!.text}"
+              <!-- SSR: nothing -->
+            {:else if versesLoaded && loadedReadings[i]?.verses.length}
+              <p class="mt-3 text-stone-800 leading-relaxed text-[0.9375rem]">
+                {#each loadedReadings[i]!.verses as verse}
+                  <sup class="text-[0.65rem] font-semibold text-stone-400 mr-[1px] select-none align-super">{verse.verseNumber}</sup>{$lang === 'latin' ? verse.textLatin : verse.textEnglish}{' '}
+                {/each}
               </p>
-            {:else if !previewsLoaded}
+            {:else if versesLoaded && !loadedReadings[i]?.verses.length}
+              <p class="mt-3 text-sm text-stone-400 italic">Passage not found in database.</p>
+            {:else if !versesLoaded}
               <div class="mt-3 flex items-center gap-2 text-stone-400 text-sm">
                 <Spinner size="sm" />
                 <span>Loading…</span>
-              </div>
-            {/if}
-
-            {#if reading.segments.length > 1}
-              <div class="mt-3 flex flex-wrap gap-2">
-                {#each reading.segments as seg, si}
-                  <a href="/bible/{reading.bookCode}/{seg.chapterStart}"
-                    class="text-xs text-stone-400 hover:text-primary">
-                    Part {si + 1}: {seg.chapterStart}:{seg.verseStart}–{seg.chapterStart !== seg.chapterEnd ? `${seg.chapterEnd}:` : ''}{seg.verseEnd}
-                  </a>
-                {/each}
               </div>
             {/if}
           </div>
