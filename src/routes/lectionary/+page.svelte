@@ -3,15 +3,16 @@
   import type { LectionaryReading, ScriptureVerse } from '$lib/types';
   import Badge from '$lib/components/ui/Badge.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
+  import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import { seasonVariant, formatDate } from '$lib/utils';
   import { scriptureDb } from '$lib/db/scripture';
   import { browser } from '$app/environment';
   import { lang } from '$lib/stores/language';
 
   let { data } = $props<{ data: PageData }>();
+
   const entry = $derived(data.entry);
   const readings = $derived(data.dayReadings?.readings ?? []);
-  const yearLabel = $derived(data.yearLabel ?? '');
 
   type LoadedReading = { verses: ScriptureVerse[] } | null;
   let loadedReadings: LoadedReading[] = $state([]);
@@ -70,52 +71,70 @@
   }
 </script>
 
-<svelte:head><title>Daily Bible — Today</title></svelte:head>
+<svelte:head>
+  <title>Mass Readings — Daily Bible</title>
+</svelte:head>
 
 <div class="space-y-6">
-  <div class="text-center py-4">
-    <p class="text-sm text-stone-500 uppercase tracking-wide">{formatDate(new Date().toISOString().slice(0, 10))}</p>
-    <h1 class="mt-1 text-4xl font-serif font-bold text-primary">Daily Bible</h1>
-    <p class="mt-1 text-stone-500 italic">Clementine Vulgate • Douay-Rheims</p>
+  <div>
+    <p class="text-sm text-stone-500 uppercase tracking-wide">{formatDate(data.date)}</p>
+    <h1 class="mt-1 text-3xl font-serif font-bold text-primary">Mass Readings</h1>
+    <p class="mt-0.5 text-stone-500 text-sm italic">Roman Rite Lectionary for Mass</p>
   </div>
 
-  <div class="card p-6 season-{entry.season.toLowerCase()}">
+  <!-- Liturgical context -->
+  <div class="card p-5 season-{entry.season.toLowerCase()}">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <Badge variant={seasonVariant(entry.liturgicalColor)}>{entry.season.replace('OrdinaryTime','Ordinary Time').replace('HolyWeek','Holy Week')}</Badge>
-        {#if entry.rank !== 'Feria'}
-          <Badge variant="default" class="ml-2">{entry.rank}</Badge>
-        {/if}
-        <h2 class="mt-2 text-2xl font-serif font-semibold">{entry.title}</h2>
+        <div class="flex flex-wrap gap-2">
+          <Badge variant={seasonVariant(entry.liturgicalColor)}>
+            {entry.season.replace('OrdinaryTime','Ordinary Time').replace('HolyWeek','Holy Week')}
+          </Badge>
+          {#if entry.rank !== 'Feria'}
+            <Badge variant="default">{entry.rank}</Badge>
+          {/if}
+          <Badge variant="default">{data.yearLabel}</Badge>
+        </div>
+        <p class="mt-2 font-serif text-lg font-semibold text-stone-800">{entry.title}</p>
       </div>
       <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-full border-2 border-stone-300"
-          style="background-color: {entry.liturgicalColor === 'Purple' ? '#6B3A8A' : entry.liturgicalColor === 'White' ? '#F5F0E8' : entry.liturgicalColor === 'Red' ? '#C0392B' : entry.liturgicalColor === 'Green' ? '#2D6A4F' : '#C2185B'}">
+        <div class="w-5 h-5 rounded-full border border-stone-300"
+          style="background-color: {
+            entry.liturgicalColor === 'Purple' ? '#6B3A8A' :
+            entry.liturgicalColor === 'White'  ? '#F5F0E8' :
+            entry.liturgicalColor === 'Red'    ? '#C0392B' :
+            entry.liturgicalColor === 'Green'  ? '#2D6A4F' : '#C2185B'
+          }">
         </div>
         <span class="text-sm text-stone-500">{entry.liturgicalColor}</span>
       </div>
     </div>
   </div>
 
-  <!-- Today's Mass Readings -->
-  {#if readings.length > 0}
+  <!-- Readings list -->
+  {#if readings.length === 0}
+    <EmptyState
+      title="No readings assigned"
+      description="Lectionary data covers Sundays, solemnities, and Holy Week. Ordinary weekday readings are not yet included."
+      icon="✝"
+    />
+  {:else}
     <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="font-serif text-xl font-semibold text-stone-800">Mass Readings</h2>
-        <span class="text-xs text-stone-400">{yearLabel}</span>
-      </div>
-
       {#each readings as reading, i (reading.role + i)}
         <div class="card p-0 overflow-hidden border-l-4 {roleColor[reading.role] ?? 'border-l-stone-300'}">
           <div class="p-4">
+            <!-- Header: role label + citation -->
             <div class="flex flex-wrap items-baseline justify-between gap-2">
               <div class="flex items-center gap-2">
                 <span class="text-stone-400 text-sm select-none">{roleIcon[reading.role] ?? '•'}</span>
-                <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">{reading.label}</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  {reading.label}
+                </span>
               </div>
               <span class="text-sm font-medium text-stone-700 font-mono">{reading.citation}</span>
             </div>
 
+            <!-- Verses -->
             {#if !browser}
               <!-- SSR: nothing -->
             {:else if versesLoaded && loadedReadings[i]?.verses.length}
@@ -144,17 +163,14 @@
     </div>
   {/if}
 
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-    {#each [
-      { href: '/lectionary', icon: '📜', label: 'Mass Readings' },
-      { href: '/bible', icon: '📖', label: 'Read the Bible' },
-      { href: '/liturgy/calendar', icon: '📅', label: 'Liturgical Calendar' },
-      { href: '/study', icon: '✏️', label: 'My Study Notes' }
-    ] as link}
-      <a href={link.href} class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
-        <div class="text-3xl mb-2">{link.icon}</div>
-        <p class="text-sm font-medium text-stone-700 group-hover:text-primary transition-colors">{link.label}</p>
-      </a>
-    {/each}
+  <div class="grid grid-cols-2 gap-3 pt-2">
+    <a href="/liturgy/calendar" class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
+      <div class="text-2xl mb-1">📅</div>
+      <p class="text-sm font-medium text-stone-700 group-hover:text-primary transition-colors">Calendar</p>
+    </a>
+    <a href="/bible" class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
+      <div class="text-2xl mb-1">📖</div>
+      <p class="text-sm font-medium text-stone-700 group-hover:text-primary transition-colors">Bible</p>
+    </a>
   </div>
 </div>

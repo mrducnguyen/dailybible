@@ -53,3 +53,24 @@ export interface Note {
   createdAt: string;
   updatedAt?: string;
 }
+
+export interface LectionarySegment {
+  chapterStart: number;
+  verseStart: number;
+  chapterEnd: number;
+  verseEnd: number;
+}
+
+export interface LectionaryReading {
+  role: 'first' | 'psalm' | 'second' | 'gospel';
+  label: string;
+  bookCode: string;
+  citation: string;
+  segments: LectionarySegment[];
+}
+
+export interface LectionaryDay {
+  key: string;
+  lectionaryYear: 'A' | 'B' | 'C';
+  readings: LectionaryReading[];
+}

@@ -1,6 +1,6 @@
 import type { PageLoad } from './$types';
-import { getCalendarEntry } from '$lib/db/liturgy';
 import { getDayReadings, getLectionaryYear, lectionaryYearLabel } from '$lib/db/lectionary';
+import { getCalendarEntry } from '$lib/db/liturgy';
 
 export const load: PageLoad = async () => {
   const today = new Date();
@@ -8,5 +8,12 @@ export const load: PageLoad = async () => {
   const lectionaryYear = getLectionaryYear(today);
   const dayReadings = getDayReadings(today);
   const yearLabel = lectionaryYearLabel(lectionaryYear);
-  return { entry, dayReadings, yearLabel };
+
+  return {
+    date: today.toISOString().slice(0, 10),
+    entry,
+    lectionaryYear,
+    yearLabel,
+    dayReadings,
+  };
 };

@@ -4,9 +4,9 @@
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { studyDb } from '$lib/db/study';
   import { browser } from '$app/environment';
+  import { lang } from '$lib/stores/language';
 
   let { data } = $props<{ data: PageData }>();
-  let translation = $state<'english' | 'latin'>('english');
   let bookmarkedVerses = $state<Set<string>>(new Set());
   let initialized = $state(false);
 
@@ -49,15 +49,7 @@
     <span class="text-stone-800">Chapter {data.chapter}</span>
   </nav>
 
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <h1 class="text-2xl">{data.book?.nameEnglish ?? data.bookCode} {data.chapter}</h1>
-    <div class="flex items-center gap-1 bg-stone-100 rounded-md p-1">
-      <button class="px-3 py-1.5 text-sm rounded {translation === 'english' ? 'bg-white shadow text-primary font-medium' : 'text-stone-500 hover:text-stone-700'}"
-        onclick={() => (translation = 'english')}>English</button>
-      <button class="px-3 py-1.5 text-sm rounded {translation === 'latin' ? 'bg-white shadow text-primary font-medium' : 'text-stone-500 hover:text-stone-700'}"
-        onclick={() => (translation = 'latin')}>Latin</button>
-    </div>
-  </div>
+  <h1 class="text-2xl">{data.book?.nameEnglish ?? data.bookCode} {data.chapter}</h1>
 
   {#if !browser || (data.verses.length === 0 && !data.error)}
     <Spinner size="lg" class="py-20" />
@@ -70,8 +62,8 @@
       {#each data.verses as verse (verse.id)}
         <div class="group flex gap-3 py-2 px-3 rounded-lg hover:bg-stone-50 transition-colors">
           <span class="text-stone-400 text-sm font-mono w-6 flex-shrink-0 mt-0.5 select-none">{verse.verseNumber}</span>
-          <p class="flex-1 {translation === 'latin' ? 'font-serif italic text-stone-700' : 'text-stone-800'} leading-relaxed">
-            {translation === 'english' ? verse.textEnglish : verse.textLatin}
+          <p class="flex-1 {$lang === 'latin' ? 'font-serif italic text-stone-700' : 'text-stone-800'} leading-relaxed">
+            {$lang === 'latin' ? verse.textLatin : verse.textEnglish}
           </p>
           <button class="opacity-0 group-hover:opacity-100 transition-opacity text-stone-400 hover:text-yellow-500 shrink-0"
             onclick={() => toggleBookmark(verse.id)}

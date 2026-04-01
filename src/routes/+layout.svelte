@@ -3,12 +3,14 @@
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
   import SearchBox from '$lib/components/SearchBox.svelte';
+  import { lang } from '$lib/stores/language';
 
   let { children }: { children: Snippet } = $props();
   let mobileOpen = $state(false);
 
   const navLinks = [
     { href: '/', label: 'Today', icon: '✝' },
+    { href: '/lectionary', label: 'Readings', icon: '📜' },
     { href: '/bible', label: 'Bible', icon: '📖' },
     { href: '/liturgy/calendar', label: 'Calendar', icon: '📅' },
     { href: '/study', label: 'Study', icon: '✏️' }
@@ -27,7 +29,7 @@
           </a>
           <SearchBox />
         </div>
-        <!-- Right: nav + mobile button (never moves) -->
+        <!-- Right: nav + language toggle + mobile button -->
         <div class="flex items-center gap-1 flex-shrink-0">
           <nav class="hidden md:flex items-center gap-1">
             {#each navLinks as link}
@@ -42,6 +44,21 @@
               </a>
             {/each}
           </nav>
+
+          <!-- Language toggle — desktop -->
+          <div class="hidden md:flex items-center ml-2 bg-white/10 rounded-md p-0.5">
+            <button
+              onclick={() => lang.set('english')}
+              class="px-2 py-1 text-xs font-semibold rounded transition-colors
+                {$lang === 'english' ? 'bg-white text-primary shadow-sm' : 'text-white/70 hover:text-white'}"
+            >EN</button>
+            <button
+              onclick={() => lang.set('latin')}
+              class="px-2 py-1 text-xs font-semibold rounded transition-colors
+                {$lang === 'latin' ? 'bg-white text-primary shadow-sm' : 'text-white/70 hover:text-white'}"
+            >LA</button>
+          </div>
+
           <button class="md:hidden text-white p-2" onclick={() => (mobileOpen = !mobileOpen)}>
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {#if mobileOpen}
@@ -65,6 +82,23 @@
       {/if}
     </div>
   </header>
+
+  <!-- Language toggle — mobile floating pill, sits just below the sticky header -->
+  <div class="md:hidden fixed top-14 right-3 z-40">
+    <div class="flex items-center bg-white rounded-full shadow-lg border border-stone-200 p-0.5">
+      <button
+        onclick={() => lang.set('english')}
+        class="px-3 py-1 text-xs font-semibold rounded-full transition-colors
+          {$lang === 'english' ? 'bg-primary text-white shadow-sm' : 'text-stone-500 hover:text-stone-700'}"
+      >EN</button>
+      <button
+        onclick={() => lang.set('latin')}
+        class="px-3 py-1 text-xs font-semibold rounded-full transition-colors
+          {$lang === 'latin' ? 'bg-primary text-white shadow-sm' : 'text-stone-500 hover:text-stone-700'}"
+      >LA</button>
+    </div>
+  </div>
+
   <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
     {@render children()}
   </main>
