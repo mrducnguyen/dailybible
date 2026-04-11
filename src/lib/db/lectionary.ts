@@ -191,6 +191,41 @@ export function getLectionaryKey(date: Date): string | null {
   return null;
 }
 
+// ── Psalm versification mapping ───────────────────────────────────────────────
+//
+// The DB uses Vulgate (Latin/Douay-Rheims) Psalm numbering, while the lectionary
+// data uses Hebrew/Protestant numbering (as in modern Catholic lectionaries).
+//
+// Mapping rules:
+//   Hebrew  1–8   → Vulgate  1–8   (identical)
+//   Hebrew  9–113 → Vulgate  8–112 (shift −1; Ps 9+10 merged as Vulgate 9)
+//   Hebrew  114   → Vulgate  113   (first half of merged psalm — not in lectionary)
+//   Hebrew  115   → Vulgate  113   (second half — not in lectionary)
+//   Hebrew  116   → split: vv 1–9 → Vulgate 114; vv 10–19 → Vulgate 115 (verse −9)
+//   Hebrew  117–146 → Vulgate 116–145 (shift −1)
+//   Hebrew  147   → split: vv 1–11 → Vulgate 146; vv 12–20 → Vulgate 147 (verse −11)
+//   Hebrew  148–150 → Vulgate 148–150 (identical)
+
+function psalmHebrewToVulgate(
+  hebrewCh: number,
+  hebrewV: number
+): { chapter: number; verse: number } {
+  if (hebrewCh <= 8)   return { chapter: hebrewCh,       verse: hebrewV };
+  if (hebrewCh <= 113) return { chapter: hebrewCh - 1,   verse: hebrewV };
+  if (hebrewCh === 116) {
+    return hebrewV <= 9
+      ? { chapter: 114, verse: hebrewV }
+      : { chapter: 115, verse: hebrewV - 9 };
+  }
+  if (hebrewCh <= 146) return { chapter: hebrewCh - 1,   verse: hebrewV };
+  if (hebrewCh === 147) {
+    return hebrewV <= 11
+      ? { chapter: 146, verse: hebrewV }
+      : { chapter: 147, verse: hebrewV - 11 };
+  }
+  return { chapter: hebrewCh, verse: hebrewV };
+}
+
 // ── Assemble typed readings ───────────────────────────────────────────────────
 
 const ROLE_LABELS: Record<string, string> = {
@@ -222,12 +257,14 @@ function assembleReadings(
       bookCode: ref.book,
       citation: ref.cite,
       segments: ref.segs.map(
-        ([chapterStart, verseStart, chapterEnd, verseEnd]): LectionarySegment => ({
-          chapterStart,
-          verseStart,
-          chapterEnd,
-          verseEnd,
-        })
+        ([chapterStart, verseStart, chapterEnd, verseEnd]): LectionarySegment => {
+          if (ref.book === 'PSA') {
+            const start = psalmHebrewToVulgate(chapterStart, verseStart);
+            const end   = psalmHebrewToVulgate(chapterEnd,   verseEnd);
+            return { chapterStart: start.chapter, verseStart: start.verse, chapterEnd: end.chapter, verseEnd: end.verse };
+          }
+          return { chapterStart, verseStart, chapterEnd, verseEnd };
+        }
       ),
     }));
 }
