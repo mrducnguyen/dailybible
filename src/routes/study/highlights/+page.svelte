@@ -1,28 +1,19 @@
 <script lang="ts">
   import { base } from '$app/paths';
-  import type { PageData } from './$types';
+  import StorageNotice from '$lib/components/StorageNotice.svelte';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
-  import { studyDb } from '$lib/db/study';
+  import { rangeLabel, versePath } from '$lib/highlights';
+  import { highlights, removeHighlightGroup } from '$lib/stores/study';
   import type { Highlight } from '$lib/types';
 
-  let { data } = $props<{ data: PageData }>();
-  let highlights = $state<Highlight[]>([]);
-  $effect(() => { highlights = [...data.highlights]; });
-
-  async function remove(id: string) {
-    await studyDb.deleteHighlight(id);
-    highlights = highlights.filter(h => h.id !== id);
-  }
-
-  function verseUrl(verseId: string) {
-    const [bookCode, chapter] = verseId.split('-');
-    return `${base}/bible/${bookCode}/${chapter}`;
-  }
-
-  function verseLabel(verseId: string) {
-    const [bookCode, chapter, verse] = verseId.split('-');
-    return `${bookCode} ${chapter}:${verse}`;
-  }
+  // A selection across several verses is stored per verse but listed as one highlight.
+  const groups = $derived.by(() => {
+    const byGroup = new Map<string, Highlight[]>();
+    for (const h of $highlights) byGroup.set(h.groupId, [...(byGroup.get(h.groupId) ?? []), h]);
+    return [...byGroup.entries()]
+      .map(([groupId, items]) => ({ groupId, items: items.sort((a, b) => a.position - b.position) }))
+      .sort((a, b) => b.items[0].createdAt.localeCompare(a.items[0].createdAt));
+  });
 </script>
 
 <svelte:head><title>Highlights — Daily Bible</title></svelte:head>
@@ -33,17 +24,21 @@
     <h1>Highlights</h1>
   </div>
 
-  {#if highlights.length === 0}
-    <EmptyState title="No highlights yet" description="Highlights will appear here." icon="🖊" />
+  <StorageNotice />
+
+  {#if groups.length === 0}
+    <EmptyState title="No highlights yet" description="Select any text while reading, then choose Highlight." icon="🖊" />
   {:else}
-    <div class="space-y-2">
-      {#each highlights as hl (hl.id)}
-        <div class="card p-4 flex items-center gap-3">
-          <div class="w-4 h-4 rounded-full shrink-0" style="background-color: {hl.color}"></div>
-          <a href={verseUrl(hl.verseId)} class="flex-1 font-serif text-stone-800 hover:text-primary">
-            {verseLabel(hl.verseId)}
-          </a>
-          <button onclick={() => remove(hl.id)} class="text-stone-400 hover:text-red-500 text-sm">✕</button>
+    <div class="space-y-3">
+      {#each groups as { groupId, items } (groupId)}
+        <div class="card p-4 space-y-2">
+          <div class="flex items-center justify-between gap-3">
+            <a href="{base}{versePath(items[0].verseId)}" class="text-sm font-mono text-stone-500 hover:text-primary">
+              {rangeLabel(items[0].verseId, items[items.length - 1].verseId)}{items[0].lang === 'latin' ? ' · Latin' : ''}
+            </a>
+            <button onclick={() => removeHighlightGroup(groupId)} class="text-stone-400 hover:text-red-500 text-sm" aria-label="Remove highlight">✕</button>
+          </div>
+          <p class="leading-relaxed text-stone-800"><mark class="bg-yellow-200 text-inherit rounded-sm">{items.map(h => h.text).join(' ')}</mark></p>
         </div>
       {/each}
     </div>

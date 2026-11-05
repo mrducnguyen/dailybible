@@ -1,11 +1,13 @@
 <script lang="ts">
   import { base } from '$app/paths';
+  import StorageNotice from '$lib/components/StorageNotice.svelte';
 </script>
 
 <svelte:head><title>Study — Daily Bible</title></svelte:head>
 
 <div class="space-y-6">
   <h1>My Study</h1>
+  <StorageNotice />
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     {#each [
       { href: base + '/study/bookmarks', icon: '★', label: 'Bookmarks', description: 'Your saved verses' },
@@ -19,5 +21,4 @@
       </a>
     {/each}
   </div>
-  <p class="text-xs text-stone-400 text-center">All data stored locally on your device.</p>
 </div>

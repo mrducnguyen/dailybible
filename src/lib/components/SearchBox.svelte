@@ -4,6 +4,7 @@
   import { searchVerses } from '$lib/search';
   import { scriptureDb } from '$lib/db/scripture';
   import type { ScriptureVerse } from '$lib/types';
+  import VerseText from '$lib/components/VerseText.svelte';
 
   let focused = $state(false);
   let query = $state('');
@@ -192,7 +193,7 @@
               >
                 <span class="text-xs font-mono text-stone-400 flex-shrink-0 pt-0.5">{verse.verseNumber}</span>
                 <span class="text-sm text-stone-700 leading-snug">
-                  {translation === 'english' ? verse.textEnglish : verse.textLatin}
+                  <VerseText {verse} language={translation} showNote={false} />
                 </span>
               </a>
             {/each}

@@ -1,161 +1,194 @@
 <script lang="ts">
   import { base } from '$app/paths';
-  import type { PageData } from './$types';
-  import type { LectionaryReading, ScriptureVerse } from '$lib/types';
-  import Badge from '$lib/components/ui/Badge.svelte';
+  import { onMount } from 'svelte';
+  import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
-  import { seasonVariant, formatDate } from '$lib/utils';
+  import VerseText from '$lib/components/VerseText.svelte';
   import { scriptureDb } from '$lib/db/scripture';
-  import { browser } from '$app/environment';
+  import {
+    MAX_PASSAGES,
+    MIN_PASSAGES,
+    generatePassages,
+    loadMix,
+    loadSettings,
+    localDateIso,
+    randomSettings,
+    saveMix,
+    saveSettings,
+    type MixPassage,
+    type MixSettings,
+    type Testament
+  } from '$lib/mix';
   import { lang } from '$lib/stores/language';
+  import type { ScriptureBook, ScriptureVerse } from '$lib/types';
+  import { formatDate } from '$lib/utils';
 
-  let { data } = $props<{ data: PageData }>();
-  const entry = $derived(data.entry);
-  const readings = $derived(data.dayReadings?.readings ?? []);
-  const yearLabel = $derived(data.yearLabel ?? '');
+  type LoadedPassage = MixPassage & { verses: ScriptureVerse[] };
 
-  type LoadedReading = { verses: ScriptureVerse[] } | null;
-  let loadedReadings: LoadedReading[] = $state([]);
-  let versesLoaded: boolean = $state(false);
+  const sections: { testament: Testament; label: string; accent: string }[] = [
+    { testament: 'OT', label: 'Old Testament', accent: 'border-l-amber-500' },
+    { testament: 'NT', label: 'New Testament', accent: 'border-l-primary' }
+  ];
 
-  $effect(() => {
-    if (!browser || readings.length === 0) {
-      loadedReadings = [];
-      versesLoaded = false;
-      return;
-    }
-    versesLoaded = false;
-    const current = readings;
-    Promise.all(
-      current.map(async (reading: LectionaryReading): Promise<LoadedReading> => {
-        try {
-          const allVerses: ScriptureVerse[] = [];
-          for (const seg of reading.segments) {
-            const verses = await scriptureDb.getVerseRange(
-              reading.bookCode,
-              seg.chapterStart,
-              seg.verseStart,
-              seg.chapterEnd,
-              seg.verseEnd
-            );
-            allVerses.push(...verses);
-          }
-          return { verses: allVerses };
-        } catch {
-          return null;
-        }
-      })
-    ).then(results => {
-      if (current === readings) {
-        loadedReadings = results;
-        versesLoaded = true;
+  const today = localDateIso();
+  let settings = $state<MixSettings>(loadSettings());
+  let passages = $state<LoadedPassage[]>([]);
+  let books = $state(new Map<string, ScriptureBook>());
+  let loading = $state(true);
+  let error = $state(false);
+
+  async function loadVerses(picked: MixPassage[]): Promise<LoadedPassage[]> {
+    const loaded = await Promise.all(
+      picked.map(async p => ({
+        ...p,
+        verses: await scriptureDb.getVerseRange(p.bookCode, p.chapter, p.verseStart, p.chapter, p.verseEnd)
+      }))
+    );
+    return loaded.filter(p => p.verses.length > 0);
+  }
+
+  async function showMix(picked: MixPassage[]) {
+    passages = await loadVerses(picked);
+    saveMix(today, passages.map(({ verses, ...passage }) => passage));
+  }
+
+  // Slider changes and new mixes run one at a time so they can't overwrite each other.
+  let queue = Promise.resolve();
+  function enqueue(task: () => Promise<void>) {
+    queue = queue.then(task).catch(e => {
+      console.error('[mix] could not update mix:', e);
+      error = true;
+    });
+    return queue;
+  }
+
+  /** A new mix rolls the number of passages as well as the passages themselves. */
+  function newMix() {
+    return enqueue(async () => {
+      loading = true;
+      error = false;
+      try {
+        settings = randomSettings();
+        saveSettings(settings);
+        const [ot, nt] = await Promise.all([
+          generatePassages('OT', settings.OT),
+          generatePassages('NT', settings.NT)
+        ]);
+        await showMix([...ot, ...nt]);
+      } finally {
+        loading = false;
       }
     });
+  }
+
+  /** Moving a slider adds or removes passages, leaving the ones already showing. */
+  function changeSetting(testament: Testament) {
+    saveSettings(settings);
+    return enqueue(async () => {
+      const current = passages.filter(p => p.testament === testament);
+      const other = passages.filter(p => p.testament !== testament);
+      const wanted = settings[testament];
+      const added = wanted > current.length
+        ? await generatePassages(testament, wanted - current.length, current)
+        : [];
+      await showMix([...other, ...current.slice(0, wanted), ...added]);
+    });
+  }
+
+  onMount(async () => {
+    try {
+      books = new Map((await scriptureDb.getBooks()).map(b => [b.bookCode, b]));
+      const saved = loadMix(today);
+      if (saved) {
+        passages = await loadVerses(saved);
+        loading = false;
+      } else {
+        await newMix();
+      }
+    } catch (e) {
+      console.error('[mix] could not load:', e);
+      error = true;
+      loading = false;
+    }
   });
 
-  const roleIcon: Record<string, string> = {
-    first: '✦', psalm: '♪', second: '✦', gospel: '✝',
-  };
-
-  const roleColor: Record<string, string> = {
-    first: 'border-l-amber-500',
-    psalm: 'border-l-blue-400',
-    second: 'border-l-amber-500',
-    gospel: 'border-l-primary',
-  };
-
-  function chapterLink(reading: LectionaryReading): string {
-    const seg = reading.segments[0];
-    if (!seg) return `${base}/bible/${reading.bookCode}`;
-    return `${base}/bible/${reading.bookCode}/${seg.chapterStart}`;
+  function citation(p: MixPassage): string {
+    const book = books.get(p.bookCode);
+    const name = ($lang === 'latin' ? book?.nameLatin : book?.nameEnglish) ?? p.bookCode;
+    return `${name} ${p.chapter}:${p.verseStart}–${p.verseEnd}`;
   }
 </script>
 
-<svelte:head><title>Daily Bible — Today</title></svelte:head>
+<svelte:head><title>Daily Bible — Today's Mix</title></svelte:head>
 
-<div class="space-y-6">
+<div class="max-w-3xl mx-auto space-y-6">
   <div class="text-center py-4">
-    <p class="text-sm text-stone-500 uppercase tracking-wide">{formatDate(new Date().toISOString().slice(0, 10))}</p>
+    <p class="text-sm text-stone-500 uppercase tracking-wide">{formatDate(today)}</p>
     <h1 class="mt-1 text-4xl font-serif font-bold text-primary">Daily Bible</h1>
-    <p class="mt-1 text-stone-500 italic">Clementine Vulgate • Douay-Rheims</p>
+    <p class="mt-1 text-stone-500 italic">A random mix of Scripture, new every day</p>
   </div>
 
-  <div class="card p-6 season-{entry.season.toLowerCase()}">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <Badge variant={seasonVariant(entry.liturgicalColor)}>{entry.season.replace('OrdinaryTime','Ordinary Time').replace('HolyWeek','Holy Week')}</Badge>
-        {#if entry.rank !== 'Feria'}
-          <Badge variant="default" class="ml-2">{entry.rank}</Badge>
-        {/if}
-        <h2 class="mt-2 text-2xl font-serif font-semibold">{entry.title}</h2>
-      </div>
-      <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-full border-2 border-stone-300"
-          style="background-color: {entry.liturgicalColor === 'Purple' ? '#6B3A8A' : entry.liturgicalColor === 'White' ? '#F5F0E8' : entry.liturgicalColor === 'Red' ? '#C0392B' : entry.liturgicalColor === 'Green' ? '#2D6A4F' : '#C2185B'}">
-        </div>
-        <span class="text-sm text-stone-500">{entry.liturgicalColor}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Today's Mass Readings -->
-  {#if readings.length > 0}
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="font-serif text-xl font-semibold text-stone-800">Mass Readings</h2>
-        <span class="text-xs text-stone-400">{yearLabel}</span>
-      </div>
-
-      {#each readings as reading, i (reading.role + i)}
-        <div class="card p-0 overflow-hidden border-l-4 {roleColor[reading.role] ?? 'border-l-stone-300'}">
-          <div class="p-4">
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <span class="text-stone-400 text-sm select-none">{roleIcon[reading.role] ?? '•'}</span>
-                <span class="text-xs font-semibold uppercase tracking-wider text-stone-500">{reading.label}</span>
-              </div>
-              <span class="text-sm font-medium text-stone-700 font-mono">{reading.citation}</span>
-            </div>
-
-            {#if !browser}
-              <!-- SSR: nothing -->
-            {:else if versesLoaded && loadedReadings[i]?.verses.length}
-              <p class="mt-3 text-stone-800 leading-relaxed text-[0.9375rem]">
-                {#each loadedReadings[i]!.verses as verse}
-                  <sup class="text-[0.65rem] font-semibold text-stone-400 mr-[1px] select-none align-super">{verse.verseNumber}</sup>{$lang === 'latin' ? verse.textLatin : verse.textEnglish}{' '}
-                {/each}
-              </p>
-            {:else if versesLoaded && !loadedReadings[i]?.verses.length}
-              <p class="mt-3 text-sm text-stone-400 italic">Passage not found in database.</p>
-            {:else if !versesLoaded}
-              <div class="mt-3 flex items-center gap-2 text-stone-400 text-sm">
-                <Spinner size="sm" />
-                <span>Loading…</span>
-              </div>
-            {/if}
-          </div>
-
-          <div class="border-t border-stone-100 px-4 py-2.5 bg-stone-50/60 flex justify-end">
-            <a href={chapterLink(reading)} class="btn-secondary text-xs py-1 px-3">
-              Read chapter →
-            </a>
-          </div>
-        </div>
+  <div class="card p-5 space-y-4">
+    <div class="grid gap-4 sm:grid-cols-2">
+      {#each sections as { testament, label } (testament)}
+        <label class="block">
+          <span class="flex items-baseline justify-between gap-2 text-sm">
+            <span class="font-medium text-stone-800">{label}</span>
+            <span class="text-stone-500">{settings[testament]} {settings[testament] === 1 ? 'passage' : 'passages'}</span>
+          </span>
+          <input
+            type="range"
+            class="mt-2 w-full accent-primary"
+            min={MIN_PASSAGES}
+            max={MAX_PASSAGES}
+            step="1"
+            aria-label="{label} passages"
+            bind:value={settings[testament]}
+            onchange={() => changeSetting(testament)}
+          />
+        </label>
       {/each}
     </div>
-  {/if}
-
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-    {#each [
-      { href: base + '/lectionary', icon: '📜', label: 'Mass Readings' },
-      { href: base + '/bible', icon: '📖', label: 'Read the Bible' },
-      { href: base + '/liturgy/calendar', icon: '📅', label: 'Liturgical Calendar' },
-      { href: base + '/study', icon: '✏️', label: 'My Study Notes' }
-    ] as link}
-      <a href={link.href} class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
-        <div class="text-3xl mb-2">{link.icon}</div>
-        <p class="text-sm font-medium text-stone-700 group-hover:text-primary transition-colors">{link.label}</p>
-      </a>
-    {/each}
+    <div class="flex justify-center">
+      <button class="btn-primary disabled:opacity-50" disabled={loading} onclick={newMix}>
+        Another mix
+        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" />
+          <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" />
+          <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />
+        </svg>
+      </button>
+    </div>
+    <p class="text-center text-xs text-stone-500">Select any text to highlight it or add a note.</p>
   </div>
+
+  {#if error}
+    <EmptyState title="Could not load today's mix" description="Please refresh the page to try again." icon="⚠️" />
+  {:else if loading}
+    <div class="flex flex-col items-center gap-3 py-16 text-stone-500 text-sm">
+      <Spinner size="lg" />
+      <p>Preparing your mix… the first visit downloads the Bible (about 17 MB).</p>
+    </div>
+  {:else}
+    {#each sections as { testament, label, accent } (testament)}
+      <section class="space-y-3">
+        <h2 class="text-xl">{label}</h2>
+        {#each passages.filter(p => p.testament === testament) as passage (`${passage.bookCode}-${passage.chapter}-${passage.verseStart}`)}
+          <article class="card overflow-hidden border-l-4 {accent}">
+            <div class="p-4">
+              <h3 class="text-base font-semibold">{citation(passage)}</h3>
+              <p class="mt-2 leading-relaxed text-[0.9375rem] {$lang === 'latin' ? 'font-serif italic text-stone-700' : 'text-stone-800'}">
+                {#each passage.verses as verse (verse.id)}
+                  <sup class="text-[0.65rem] not-italic font-semibold text-stone-400 mr-[1px] select-none">{verse.verseNumber}</sup><VerseText {verse} />{' '}
+                {/each}
+              </p>
+            </div>
+            <div class="border-t border-stone-100 px-4 py-2.5 bg-stone-50/60 flex justify-end">
+              <a href="{base}/bible/{passage.bookCode}/{passage.chapter}" class="btn-secondary text-xs py-1 px-3">Read chapter →</a>
+            </div>
+          </article>
+        {/each}
+      </section>
+    {/each}
+  {/if}
 </div>

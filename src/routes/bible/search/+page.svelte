@@ -3,6 +3,7 @@
   import { browser } from '$app/environment';
   import { searchVerses } from '$lib/search';
   import type { ScriptureVerse } from '$lib/types';
+  import VerseText from '$lib/components/VerseText.svelte';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
 
@@ -58,7 +59,7 @@
           class="card p-4 block hover:border-primary/40 hover:shadow-md transition-all">
           <p class="text-xs text-stone-400 mb-1 font-mono">{verse.bookCode} {verse.chapter}:{verse.verseNumber}</p>
           <p class="text-stone-800 leading-relaxed">
-            {translation === 'english' ? verse.textEnglish : verse.textLatin}
+            <VerseText {verse} language={translation} showNote={false} />
           </p>
         </a>
       {/each}

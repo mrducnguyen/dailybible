@@ -18,11 +18,4 @@
   .card {
     @apply bg-white rounded-lg border border-stone-200 shadow-sm;
   }
-  .season-advent { @apply border-l-4 border-advent bg-purple-50; }
-  .season-lent { @apply border-l-4 border-advent bg-purple-50; }
-  .season-easter { @apply border-l-4 border-yellow-400 bg-yellow-50; }
-  .season-christmas { @apply border-l-4 border-yellow-400 bg-yellow-50; }
-  .season-ordinary { @apply border-l-4 border-ordinary bg-green-50; }
-  .season-holyweek { @apply border-l-4 border-advent bg-purple-50; }
-  .season-ordinarytime { @apply border-l-4 border-ordinary bg-green-50; }
 }

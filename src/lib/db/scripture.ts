@@ -5,7 +5,7 @@ import type { ScriptureBook, ScriptureVerse } from '$lib/types';
 const SELECT_BOOKS =
   'SELECT book_code AS bookCode, name_english AS nameEnglish, name_latin AS nameLatin, book_number AS bookNumber, testament, chapter_count AS chapterCount FROM books';
 export const SELECT_VERSES =
-  'SELECT id, book_code AS bookCode, chapter, verse AS verseNumber, text_english AS textEnglish, text_latin AS textLatin FROM verses';
+  "SELECT book_code || '-' || chapter || '-' || verse AS id, book_code AS bookCode, chapter, verse AS verseNumber, text_english AS textEnglish, text_latin AS textLatin FROM verses";
 
 export const scriptureDb = {
   async getBooks(): Promise<ScriptureBook[]> {

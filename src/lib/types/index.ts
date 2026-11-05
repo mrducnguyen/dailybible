@@ -19,16 +19,6 @@ export interface ScriptureVerse {
   crossReferences: string[];
 }
 
-export interface LiturgicalCalendarEntry {
-  id: string;
-  date: string;
-  season: string;
-  rank: string;
-  title: string;
-  saintName?: string;
-  liturgicalColor: string;
-}
-
 export interface Bookmark {
   id: string;
   userId: string;
@@ -43,6 +33,15 @@ export interface Highlight {
   verseId: string;
   color: string;
   createdAt: string;
+  /** Verses highlighted in one selection share a group and are removed together. */
+  groupId: string;
+  /** Position of this verse within its group. */
+  position: number;
+  lang: 'english' | 'latin';
+  /** Character range within the verse text, in `lang`. */
+  start: number;
+  end: number;
+  text: string;
 }
 
 export interface Note {
@@ -52,25 +51,4 @@ export interface Note {
   content: string;
   createdAt: string;
   updatedAt?: string;
-}
-
-export interface LectionarySegment {
-  chapterStart: number;
-  verseStart: number;
-  chapterEnd: number;
-  verseEnd: number;
-}
-
-export interface LectionaryReading {
-  role: 'first' | 'psalm' | 'second' | 'gospel';
-  label: string;
-  bookCode: string;
-  citation: string;
-  segments: LectionarySegment[];
-}
-
-export interface LectionaryDay {
-  key: string;
-  lectionaryYear: 'A' | 'B' | 'C';
-  readings: LectionaryReading[];
 }

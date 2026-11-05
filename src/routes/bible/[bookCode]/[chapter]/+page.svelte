@@ -5,7 +5,9 @@
   import Spinner from '$lib/components/ui/Spinner.svelte';
   import { studyDb } from '$lib/db/study';
   import { browser } from '$app/environment';
+  import VerseText from '$lib/components/VerseText.svelte';
   import { lang } from '$lib/stores/language';
+  import { notes, openNote } from '$lib/stores/study';
 
   let { data } = $props<{ data: PageData }>();
   let bookmarkedVerses = $state<Set<string>>(new Set());
@@ -33,6 +35,8 @@
     bookmarkedVerses = new Set(bookmarkedVerses);
   }
 
+  const noteFor = (verseId: string) => $notes.find(n => n.verseId === verseId);
+
   let prevChapter = $derived(data.chapter > 1 ? data.chapter - 1 : null);
   let nextChapter = $derived(data.book && data.chapter < data.book.chapterCount ? data.chapter + 1 : null);
 </script>
@@ -51,6 +55,7 @@
   </nav>
 
   <h1 class="text-2xl">{data.book?.nameEnglish ?? data.bookCode} {data.chapter}</h1>
+  <p class="text-sm text-stone-500">Select any text to highlight it or add a note.</p>
 
   {#if !browser || (data.verses.length === 0 && !data.error)}
     <Spinner size="lg" class="py-20" />
@@ -63,14 +68,25 @@
       {#each data.verses as verse (verse.id)}
         <div class="group flex gap-3 py-2 px-3 rounded-lg hover:bg-stone-50 transition-colors">
           <span class="text-stone-400 text-sm font-mono w-6 flex-shrink-0 mt-0.5 select-none">{verse.verseNumber}</span>
-          <p class="flex-1 {$lang === 'latin' ? 'font-serif italic text-stone-700' : 'text-stone-800'} leading-relaxed">
-            {$lang === 'latin' ? verse.textLatin : verse.textEnglish}
-          </p>
-          <button class="opacity-0 group-hover:opacity-100 transition-opacity text-stone-400 hover:text-yellow-500 shrink-0"
-            onclick={() => toggleBookmark(verse.id)}
-            title={bookmarkedVerses.has(verse.id) ? 'Remove bookmark' : 'Bookmark this verse'}>
-            {bookmarkedVerses.has(verse.id) ? '★' : '☆'}
-          </button>
+          <div class="flex-1 min-w-0">
+            <p class="{$lang === 'latin' ? 'font-serif italic text-stone-700' : 'text-stone-800'} leading-relaxed">
+              <VerseText {verse} showNote={false} />
+            </p>
+            {#if noteFor(verse.id)}
+              <p class="mt-1.5 border-l-2 border-amber-400 pl-2 text-sm text-stone-600 whitespace-pre-wrap">{noteFor(verse.id)?.content}</p>
+            {/if}
+          </div>
+          <div class="flex items-start gap-2 shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
+            <button class="text-stone-400 hover:text-primary"
+              onclick={() => openNote(verse.id)}
+              title={noteFor(verse.id) ? 'Edit note' : 'Add a note'}
+              aria-label={noteFor(verse.id) ? 'Edit note' : 'Add a note'}>✎</button>
+            <button class="text-stone-400 hover:text-yellow-500"
+              onclick={() => toggleBookmark(verse.id)}
+              title={bookmarkedVerses.has(verse.id) ? 'Remove bookmark' : 'Bookmark this verse'}>
+              {bookmarkedVerses.has(verse.id) ? '★' : '☆'}
+            </button>
+          </div>
         </div>
       {/each}
     </div>

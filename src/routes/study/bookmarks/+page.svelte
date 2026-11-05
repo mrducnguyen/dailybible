@@ -1,5 +1,6 @@
 <script lang="ts">
   import { base } from '$app/paths';
+  import StorageNotice from '$lib/components/StorageNotice.svelte';
   import type { PageData } from './$types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import { studyDb } from '$lib/db/study';
@@ -32,6 +33,8 @@
     <a href="{base}/study" class="text-stone-400 hover:text-primary">← Study</a>
     <h1>Bookmarks</h1>
   </div>
+
+  <StorageNotice />
 
   {#if bookmarks.length === 0}
     <EmptyState title="No bookmarks yet" description="Star a verse while reading to bookmark it." icon="★" />

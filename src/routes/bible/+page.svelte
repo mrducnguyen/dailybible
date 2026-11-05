@@ -11,7 +11,7 @@
 <div class="space-y-8">
   <div>
     <h1>The Holy Bible</h1>
-    <p class="text-stone-500 mt-1">Clementine Vulgate (Latin) • Douay-Rheims 1899 (English)</p>
+    <p class="text-stone-500 mt-1">Nova Vulgata (Latin) • Douay-Rheims (English)</p>
   </div>
 
   {#if data.error}

@@ -25,7 +25,8 @@ function now(): string {
 export const studyDb = {
   // Bookmarks
   async getBookmarks(): Promise<Bookmark[]> {
-    return (await getDb()).getAll('bookmarks');
+    const bookmarks: Bookmark[] = await (await getDb()).getAll('bookmarks');
+    return bookmarks.filter(b => typeof b.verseId === 'string');
   },
   async createBookmark(verseId: string, label?: string): Promise<Bookmark> {
     const bm: Bookmark = { id: uuid(), userId: 'local', verseId, label, createdAt: now() };
@@ -35,26 +36,17 @@ export const studyDb = {
   async deleteBookmark(id: string): Promise<void> {
     await (await getDb()).delete('bookmarks', id);
   },
-  async isBookmarked(verseId: string): Promise<boolean> {
-    const all = await (await getDb()).getAll('bookmarks') as Bookmark[];
-    return all.some(b => b.verseId === verseId);
-  },
 
   // Highlights
   async getHighlights(): Promise<Highlight[]> {
-    return (await getDb()).getAll('highlights');
+    const highlights: Highlight[] = await (await getDb()).getAll('highlights');
+    return highlights.filter(h => typeof h.start === 'number');
   },
-  async createHighlight(verseId: string, color: string): Promise<Highlight> {
-    const hl: Highlight = { id: uuid(), userId: 'local', verseId, color, createdAt: now() };
-    await (await getDb()).put('highlights', hl);
-    return hl;
-  },
-  async deleteHighlight(id: string): Promise<void> {
-    await (await getDb()).delete('highlights', id);
-  },
-  async getVerseHighlight(verseId: string): Promise<Highlight | undefined> {
-    const all = await (await getDb()).getAll('highlights') as Highlight[];
-    return all.find(h => h.verseId === verseId);
+  async replaceHighlights(removeIds: string[], add: Omit<Highlight, 'id' | 'userId' | 'createdAt'>[]): Promise<Highlight[]> {
+    const created = add.map(h => ({ ...h, id: uuid(), userId: 'local', createdAt: now() }));
+    const tx = (await getDb()).transaction('highlights', 'readwrite');
+    await Promise.all([...removeIds.map(id => tx.store.delete(id)), ...created.map(h => tx.store.put(h)), tx.done]);
+    return created;
   },
 
   // Notes
@@ -73,9 +65,5 @@ export const studyDb = {
   },
   async deleteNote(id: string): Promise<void> {
     await (await getDb()).delete('notes', id);
-  },
-  async getVerseNote(verseId: string): Promise<Note | undefined> {
-    const all = await (await getDb()).getAll('notes') as Note[];
-    return all.find(n => n.verseId === verseId);
   }
 };

@@ -4,6 +4,7 @@
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
   import SearchBox from '$lib/components/SearchBox.svelte';
+  import StudyActions from '$lib/components/StudyActions.svelte';
   import { lang } from '$lib/stores/language';
 
   let { children }: { children: Snippet } = $props();
@@ -11,9 +12,7 @@
 
   const navLinks = [
     { href: base + '/', label: 'Today', icon: '✝' },
-    { href: base + '/lectionary', label: 'Readings', icon: '📜' },
     { href: base + '/bible', label: 'Bible', icon: '📖' },
-    { href: base + '/liturgy/calendar', label: 'Calendar', icon: '📅' },
     { href: base + '/study', label: 'Study', icon: '✏️' }
   ];
 </script>
@@ -100,11 +99,14 @@
     </div>
   </div>
 
+  <StudyActions />
+
   <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
     {@render children()}
   </main>
   <footer class="border-t border-stone-200 bg-white py-6 text-center text-sm text-stone-500">
     <p>Daily Bible — <em>Pray, Called Ones</em></p>
-    <p class="mt-1 text-xs">Roman Rite • Clementine Vulgate • Douay-Rheims • Offline-first</p>
+    <p class="mt-1 text-xs">Douay-Rheims • Nova Vulgata • Offline-first</p>
+    <p class="mt-1 text-xs">Bookmarks, highlights and notes are saved only in this browser. Clearing browser data deletes them.</p>
   </footer>
 </div>
