@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import { browser } from '$app/environment';
   import { searchVerses } from '$lib/search';
   import type { ScriptureVerse } from '$lib/types';
@@ -53,7 +54,7 @@
     <p class="text-sm text-stone-500">{results.length} result{results.length !== 1 ? 's' : ''}</p>
     <div class="space-y-2">
       {#each results as verse (verse.id)}
-        <a href="/bible/{verse.bookCode}/{verse.chapter}"
+        <a href="{base}/bible/{verse.bookCode}/{verse.chapter}"
           class="card p-4 block hover:border-primary/40 hover:shadow-md transition-all">
           <p class="text-xs text-stone-400 mb-1 font-mono">{verse.bookCode} {verse.chapter}:{verse.verseNumber}</p>
           <p class="text-stone-800 leading-relaxed">

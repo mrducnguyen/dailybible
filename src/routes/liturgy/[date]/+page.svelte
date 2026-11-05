@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import type { LectionaryReading } from '$lib/types';
   import Badge from '$lib/components/ui/Badge.svelte';
@@ -18,8 +19,8 @@
 
   function chapterLink(reading: LectionaryReading): string {
     const seg = reading.segments[0];
-    if (!seg) return `/bible/${reading.bookCode}`;
-    return `/bible/${reading.bookCode}/${seg.chapterStart}`;
+    if (!seg) return `${base}/bible/${reading.bookCode}`;
+    return `${base}/bible/${reading.bookCode}/${seg.chapterStart}`;
   }
 </script>
 
@@ -27,7 +28,7 @@
 
 <div class="space-y-6">
   <nav class="text-sm text-stone-500">
-    <a href="/liturgy/calendar" class="hover:text-primary">Calendar</a>
+    <a href="{base}/liturgy/calendar" class="hover:text-primary">Calendar</a>
     <span class="mx-2">›</span>
     <span class="text-stone-800">{formatDate(data.date)}</span>
   </nav>

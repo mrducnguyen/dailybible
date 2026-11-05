@@ -1,5 +1,6 @@
 import { Index } from 'flexsearch';
 import { getDb } from '$lib/db/sqlite';
+import { SELECT_VERSES } from '$lib/db/scripture';
 import type { ScriptureVerse } from '$lib/types';
 
 let _englishIndex: Index | null = null;
@@ -9,7 +10,7 @@ let _buildPromise: Promise<void> | null = null;
 
 async function buildIndex(): Promise<void> {
   const db = await getDb();
-  const res = db.exec('SELECT * FROM verses');
+  const res = db.exec(SELECT_VERSES);
   if (!res.length) return;
 
   _englishIndex = new Index({ tokenize: 'forward', resolution: 9 });

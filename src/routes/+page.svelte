@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import type { LectionaryReading, ScriptureVerse } from '$lib/types';
   import Badge from '$lib/components/ui/Badge.svelte';
@@ -65,8 +66,8 @@
 
   function chapterLink(reading: LectionaryReading): string {
     const seg = reading.segments[0];
-    if (!seg) return `/bible/${reading.bookCode}`;
-    return `/bible/${reading.bookCode}/${seg.chapterStart}`;
+    if (!seg) return `${base}/bible/${reading.bookCode}`;
+    return `${base}/bible/${reading.bookCode}/${seg.chapterStart}`;
   }
 </script>
 
@@ -146,10 +147,10 @@
 
   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
     {#each [
-      { href: '/lectionary', icon: '📜', label: 'Mass Readings' },
-      { href: '/bible', icon: '📖', label: 'Read the Bible' },
-      { href: '/liturgy/calendar', icon: '📅', label: 'Liturgical Calendar' },
-      { href: '/study', icon: '✏️', label: 'My Study Notes' }
+      { href: base + '/lectionary', icon: '📜', label: 'Mass Readings' },
+      { href: base + '/bible', icon: '📖', label: 'Read the Bible' },
+      { href: base + '/liturgy/calendar', icon: '📅', label: 'Liturgical Calendar' },
+      { href: base + '/study', icon: '✏️', label: 'My Study Notes' }
     ] as link}
       <a href={link.href} class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
         <div class="text-3xl mb-2">{link.icon}</div>

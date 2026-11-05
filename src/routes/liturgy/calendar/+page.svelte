@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import type { LiturgicalCalendarEntry } from '$lib/types';
   import Badge from '$lib/components/ui/Badge.svelte';
@@ -142,7 +143,7 @@
     {/if}
 
     <a
-      href="/liturgy/{entry.date}"
+      href="{base}/liturgy/{entry.date}"
       use:anchorToday={isToday}
       class="card p-3 flex items-center gap-3 hover:border-primary/40 transition-all
              {isToday ? 'border-primary/60 bg-primary/5 shadow-sm' : ''}"

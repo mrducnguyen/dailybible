@@ -1,3 +1,4 @@
+import { base } from '$app/paths';
 import type { Database, SqlJsStatic } from "sql.js";
 import { openDB } from "idb";
 
@@ -23,7 +24,7 @@ async function loadDbBuffer(): Promise<ArrayBuffer> {
         | undefined;
     if (cached) return cached;
 
-    const res = await fetch("/bible.db");
+    const res = await fetch(`${base}/bible.db`);
     if (!res.ok) throw new Error(`Failed to fetch bible.db: ${res.status}`);
     const buf = await res.arrayBuffer();
     await idb.put(IDB_STORE, buf, DB_KEY);
@@ -39,7 +40,7 @@ export async function getDb(): Promise<Database> {
         const initSqlJs = sqlMod.default ?? sqlMod.Module;
         // console.log('[sqlite] initSqlJs type:', typeof initSqlJs);
         _sql = await initSqlJs({
-            locateFile: (file: string) => `/sql.js/${file}`,
+            locateFile: (file: string) => `${base}/sql.js/${file}`,
         });
     }
 

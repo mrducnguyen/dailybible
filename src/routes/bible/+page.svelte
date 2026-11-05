@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
@@ -30,7 +31,7 @@
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {#each section.books as book (book.id)}
               <a
-                href="/bible/{book.bookCode}"
+                href="{base}/bible/{book.bookCode}"
                 class="card p-3 text-center hover:border-primary/40 hover:shadow-md transition-all group"
               >
                 <p class="text-xs text-stone-400 mb-1">#{book.bookNumber}</p>

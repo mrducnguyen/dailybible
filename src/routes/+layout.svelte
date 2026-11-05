@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import '../app.css';
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
@@ -9,11 +10,11 @@
   let mobileOpen = $state(false);
 
   const navLinks = [
-    { href: '/', label: 'Today', icon: '✝' },
-    { href: '/lectionary', label: 'Readings', icon: '📜' },
-    { href: '/bible', label: 'Bible', icon: '📖' },
-    { href: '/liturgy/calendar', label: 'Calendar', icon: '📅' },
-    { href: '/study', label: 'Study', icon: '✏️' }
+    { href: base + '/', label: 'Today', icon: '✝' },
+    { href: base + '/lectionary', label: 'Readings', icon: '📜' },
+    { href: base + '/bible', label: 'Bible', icon: '📖' },
+    { href: base + '/liturgy/calendar', label: 'Calendar', icon: '📅' },
+    { href: base + '/study', label: 'Study', icon: '✏️' }
   ];
 </script>
 
@@ -23,7 +24,7 @@
       <div class="flex items-center h-14 md:h-16 gap-2 md:gap-4">
         <!-- Left: logo + search -->
         <div class="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
-          <a href="/" class="flex items-center gap-1.5 font-serif font-bold text-white hover:text-yellow-200 transition-colors flex-shrink-0">
+          <a href="{base}/" class="flex items-center gap-1.5 font-serif font-bold text-white hover:text-yellow-200 transition-colors flex-shrink-0">
             <span class="text-xl md:text-2xl">☩</span>
             <span class="hidden md:inline text-xl">Daily Bible</span>
           </a>

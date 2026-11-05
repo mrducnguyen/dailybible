@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import { browser } from '$app/environment';
   import { searchVerses } from '$lib/search';
   import { scriptureDb } from '$lib/db/scripture';
@@ -171,7 +172,7 @@
       {#each grouped as group}
         <div class="border-b border-stone-200 last:border-0">
           <a
-            href="/bible/{group.bookCode}/{group.chapter}"
+            href="{base}/bible/{group.bookCode}/{group.chapter}"
             onclick={close}
             data-group-header
             data-book-name={group.bookName}
@@ -185,7 +186,7 @@
           <div class="divide-y divide-stone-100">
             {#each group.verses as verse}
               <a
-                href="/bible/{verse.bookCode}/{verse.chapter}"
+                href="{base}/bible/{verse.bookCode}/{verse.chapter}"
                 onclick={close}
                 class="flex gap-2 px-3 py-2 hover:bg-stone-50 transition-colors"
               >

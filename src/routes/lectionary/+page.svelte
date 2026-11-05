@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import type { LectionaryReading, ScriptureVerse } from '$lib/types';
   import Badge from '$lib/components/ui/Badge.svelte';
@@ -66,8 +67,8 @@
 
   function chapterLink(reading: LectionaryReading): string {
     const seg = reading.segments[0];
-    if (!seg) return `/bible/${reading.bookCode}`;
-    return `/bible/${reading.bookCode}/${seg.chapterStart}`;
+    if (!seg) return `${base}/bible/${reading.bookCode}`;
+    return `${base}/bible/${reading.bookCode}/${seg.chapterStart}`;
   }
 </script>
 
@@ -164,11 +165,11 @@
   {/if}
 
   <div class="grid grid-cols-2 gap-3 pt-2">
-    <a href="/liturgy/calendar" class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
+    <a href="{base}/liturgy/calendar" class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
       <div class="text-2xl mb-1">📅</div>
       <p class="text-sm font-medium text-stone-700 group-hover:text-primary transition-colors">Calendar</p>
     </a>
-    <a href="/bible" class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
+    <a href="{base}/bible" class="card p-4 text-center hover:border-primary/40 hover:shadow-md transition-all group">
       <div class="text-2xl mb-1">📖</div>
       <p class="text-sm font-medium text-stone-700 group-hover:text-primary transition-colors">Bible</p>
     </a>

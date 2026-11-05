@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import { studyDb } from '$lib/db/study';
@@ -15,7 +16,7 @@
 
   function verseUrl(verseId: string) {
     const [bookCode, chapter] = verseId.split('-');
-    return `/bible/${bookCode}/${chapter}`;
+    return `${base}/bible/${bookCode}/${chapter}`;
   }
 
   function verseLabel(verseId: string) {
@@ -28,7 +29,7 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-3">
-    <a href="/study" class="text-stone-400 hover:text-primary">← Study</a>
+    <a href="{base}/study" class="text-stone-400 hover:text-primary">← Study</a>
     <h1>Notes</h1>
   </div>
 

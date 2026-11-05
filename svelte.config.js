@@ -6,6 +6,7 @@ const config = {
   kit: {
     adapter: adapter({ fallback: 'index.html' }),
     alias: { $lib: 'src/lib' },
+    paths: { base: process.argv.includes('dev') ? '' : '/dailybible' },
     serviceWorker: { register: true }
   }
 };

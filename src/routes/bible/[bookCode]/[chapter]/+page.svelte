@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
@@ -42,9 +43,9 @@
 
 <div class="space-y-4">
   <nav class="text-sm text-stone-500 flex items-center gap-1 flex-wrap">
-    <a href="/bible" class="hover:text-primary">Bible</a>
+    <a href="{base}/bible" class="hover:text-primary">Bible</a>
     <span>›</span>
-    <a href="/bible/{data.bookCode}" class="hover:text-primary">{data.book?.nameEnglish ?? data.bookCode}</a>
+    <a href="{base}/bible/{data.bookCode}" class="hover:text-primary">{data.book?.nameEnglish ?? data.bookCode}</a>
     <span>›</span>
     <span class="text-stone-800">Chapter {data.chapter}</span>
   </nav>
@@ -75,10 +76,10 @@
     </div>
     <div class="flex justify-between pt-4 border-t border-stone-200">
       {#if prevChapter}
-        <a href="/bible/{data.bookCode}/{prevChapter}" class="btn-secondary">← Chapter {prevChapter}</a>
+        <a href="{base}/bible/{data.bookCode}/{prevChapter}" class="btn-secondary">← Chapter {prevChapter}</a>
       {:else}<div></div>{/if}
       {#if nextChapter}
-        <a href="/bible/{data.bookCode}/{nextChapter}" class="btn-secondary">Chapter {nextChapter} →</a>
+        <a href="{base}/bible/{data.bookCode}/{nextChapter}" class="btn-secondary">Chapter {nextChapter} →</a>
       {/if}
     </div>
   {/if}

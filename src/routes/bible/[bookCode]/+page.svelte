@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from '$app/paths';
   import type { PageData } from './$types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
@@ -13,7 +14,7 @@
 <div class="space-y-6">
   <!-- Breadcrumb -->
   <nav class="text-sm text-stone-500">
-    <a href="/bible" class="hover:text-primary">Bible</a>
+    <a href="{base}/bible" class="hover:text-primary">Bible</a>
     <span class="mx-2">›</span>
     <span class="text-stone-800">{book?.nameEnglish ?? data.params?.bookCode}</span>
   </nav>
@@ -32,7 +33,7 @@
       <div class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
         {#each Array.from({ length: book.chapterCount }, (_, i) => i + 1) as chapter}
           <a
-            href="/bible/{book.bookCode}/{chapter}"
+            href="{base}/bible/{book.bookCode}/{chapter}"
             class="card flex items-center justify-center h-11 font-medium text-stone-700 hover:border-primary/50 hover:text-primary hover:bg-primary/5 transition-all text-sm"
           >
             {chapter}

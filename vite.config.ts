@@ -1,8 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/dailybible/' : '/',
+export default defineConfig({
   plugins: [sveltekit()],
 
   server: {
@@ -15,4 +14,4 @@ export default defineConfig(({ mode }) => ({
       'Cross-Origin-Embedder-Policy': 'require-corp'
     }
   }
-}));
+});

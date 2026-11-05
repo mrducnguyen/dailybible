@@ -1,10 +1,16 @@
 import { getDb } from './sqlite';
 import type { ScriptureBook, ScriptureVerse } from '$lib/types';
 
+// bible.db uses snake_case columns; the app's types use camelCase.
+const SELECT_BOOKS =
+  'SELECT book_code AS bookCode, name_english AS nameEnglish, name_latin AS nameLatin, book_number AS bookNumber, testament, chapter_count AS chapterCount FROM books';
+export const SELECT_VERSES =
+  'SELECT id, book_code AS bookCode, chapter, verse AS verseNumber, text_english AS textEnglish, text_latin AS textLatin FROM verses';
+
 export const scriptureDb = {
   async getBooks(): Promise<ScriptureBook[]> {
     const db = await getDb();
-    const res = db.exec('SELECT * FROM books ORDER BY bookNumber');
+    const res = db.exec(`${SELECT_BOOKS} ORDER BY bookNumber`);
     if (!res.length) return [];
     const [{ columns, values }] = res;
     return values.map(row => {
@@ -24,7 +30,7 @@ export const scriptureDb = {
 
   async getBook(bookCode: string): Promise<ScriptureBook | null> {
     const db = await getDb();
-    const res = db.exec('SELECT * FROM books WHERE bookCode = ?', [bookCode.toUpperCase()]);
+    const res = db.exec(`${SELECT_BOOKS} WHERE bookCode = ?`, [bookCode.toUpperCase()]);
     if (!res.length || !res[0].values.length) return null;
     const [{ columns, values }] = res;
     const obj: Record<string, unknown> = {};
@@ -43,7 +49,7 @@ export const scriptureDb = {
   async getChapter(bookCode: string, chapter: number): Promise<ScriptureVerse[]> {
     const db = await getDb();
     const res = db.exec(
-      'SELECT * FROM verses WHERE bookCode = ? AND chapter = ? ORDER BY verseNumber',
+      `${SELECT_VERSES} WHERE bookCode = ? AND chapter = ? ORDER BY verseNumber`,
       [bookCode.toUpperCase(), chapter]
     );
     if (!res.length) return [];
@@ -75,12 +81,12 @@ export const scriptureDb = {
     let res;
     if (chapterStart === chapterEnd) {
       res = db.exec(
-        'SELECT * FROM verses WHERE bookCode = ? AND chapter = ? AND verseNumber >= ? AND verseNumber <= ? ORDER BY verseNumber',
+        `${SELECT_VERSES} WHERE bookCode = ? AND chapter = ? AND verseNumber >= ? AND verseNumber <= ? ORDER BY verseNumber`,
         [bookCode.toUpperCase(), chapterStart, verseStart, verseEnd]
       );
     } else {
       res = db.exec(
-        `SELECT * FROM verses WHERE bookCode = ?
+        `${SELECT_VERSES} WHERE bookCode = ?
          AND (
            (chapter = ? AND verseNumber >= ?) OR
            (chapter > ? AND chapter < ?) OR
