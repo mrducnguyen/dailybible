@@ -8,10 +8,12 @@
   import {
     MAX_PASSAGES,
     MIN_PASSAGES,
+    citation,
     generatePassages,
     loadMix,
     loadSettings,
     localDateIso,
+    mixKey,
     randomSettings,
     saveMix,
     saveSettings,
@@ -20,6 +22,7 @@
     type Testament
   } from '$lib/mix';
   import { lang } from '$lib/stores/language';
+  import { addBookmark, bookmarks, removeBookmark } from '$lib/stores/study';
   import type { ScriptureBook, ScriptureVerse } from '$lib/types';
   import { formatDate } from '$lib/utils';
 
@@ -112,10 +115,14 @@
     }
   });
 
-  function citation(p: MixPassage): string {
-    const book = books.get(p.bookCode);
-    const name = ($lang === 'latin' ? book?.nameLatin : book?.nameEnglish) ?? p.bookCode;
-    return `${name} ${p.chapter}:${p.verseStart}–${p.verseEnd}`;
+  const currentBookmark = $derived.by(() => {
+    const key = mixKey(passages);
+    return $bookmarks.find(b => mixKey(b.passages) === key);
+  });
+
+  function toggleBookmark() {
+    if (currentBookmark) return removeBookmark(currentBookmark.id);
+    return addBookmark(passages.map(({ verses, ...passage }) => passage));
   }
 </script>
 
@@ -149,14 +156,18 @@
         </label>
       {/each}
     </div>
-    <div class="flex justify-center">
-      <button class="btn-primary disabled:opacity-50" disabled={loading} onclick={newMix}>
+    <div class="flex justify-center gap-2 whitespace-nowrap">
+      <button class="btn-primary max-sm:px-3 disabled:opacity-50" disabled={loading} onclick={newMix}>
         Another mix
         <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
           <path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" />
           <path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" />
           <path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" />
         </svg>
+      </button>
+      <button class="btn-secondary max-sm:px-3 disabled:opacity-50" disabled={loading || passages.length === 0} aria-pressed={!!currentBookmark} onclick={toggleBookmark}>
+        <span class="mr-1.5 {currentBookmark ? 'text-amber-500' : ''}" aria-hidden="true">{currentBookmark ? '★' : '☆'}</span>
+        {currentBookmark ? 'Bookmarked' : 'Bookmark'}
       </button>
     </div>
     <p class="text-center text-xs text-stone-500">Select any text to highlight it or add a note.</p>
@@ -176,7 +187,7 @@
         {#each passages.filter(p => p.testament === testament) as passage (`${passage.bookCode}-${passage.chapter}-${passage.verseStart}`)}
           <article class="card overflow-hidden border-l-4 {accent}">
             <div class="p-4">
-              <h3 class="text-base font-semibold">{citation(passage)}</h3>
+              <h3 class="text-base font-semibold">{citation(passage, books.get(passage.bookCode), $lang)}</h3>
               <p class="mt-2 leading-relaxed text-[0.9375rem] {$lang === 'latin' ? 'font-serif italic text-stone-700' : 'text-stone-800'}">
                 {#each passage.verses as verse (verse.id)}
                   <sup class="text-[0.65rem] not-italic font-semibold text-stone-400 mr-[1px] select-none">{verse.verseNumber}</sup><VerseText {verse} />{' '}

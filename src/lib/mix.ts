@@ -1,4 +1,6 @@
 import { getDb } from '$lib/db/sqlite';
+import type { Lang } from '$lib/stores/language';
+import type { ScriptureBook } from '$lib/types';
 
 export type Testament = 'OT' | 'NT';
 export type MixSettings = Record<Testament, number>;
@@ -78,6 +80,25 @@ export function saveMix(date: string, passages: MixPassage[]): void {
 
 export function randomSettings(): MixSettings {
   return { OT: randomInt(MIN_PASSAGES, MAX_PASSAGES), NT: randomInt(MIN_PASSAGES, MAX_PASSAGES) };
+}
+
+/** Make a saved mix the current one, with the sliders matching it. */
+export function restoreMix(passages: MixPassage[]): void {
+  saveMix(localDateIso(), passages);
+  saveSettings({
+    OT: clampPassages(passages.filter(p => p.testament === 'OT').length),
+    NT: clampPassages(passages.filter(p => p.testament === 'NT').length)
+  });
+}
+
+/** Identifies a mix by its passages, to tell whether two mixes are the same. */
+export function mixKey(passages: MixPassage[]): string {
+  return passages.map(p => `${p.bookCode}-${p.chapter}-${p.verseStart}-${p.verseEnd}`).join('|');
+}
+
+export function citation(passage: MixPassage, book: ScriptureBook | undefined, lang: Lang): string {
+  const name = (lang === 'latin' ? book?.nameLatin : book?.nameEnglish) ?? passage.bookCode;
+  return `${name} ${passage.chapter}:${passage.verseStart}–${passage.verseEnd}`;
 }
 
 /** Pick `count` random passages, at most one per chapter, avoiding those already in `existing`. */

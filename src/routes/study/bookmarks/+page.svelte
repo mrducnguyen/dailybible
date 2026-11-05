@@ -1,28 +1,36 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { base } from '$app/paths';
+  import { onMount } from 'svelte';
   import StorageNotice from '$lib/components/StorageNotice.svelte';
-  import type { PageData } from './$types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
-  import { studyDb } from '$lib/db/study';
-  import type { Bookmark } from '$lib/types';
+  import { scriptureDb } from '$lib/db/scripture';
+  import { citation, restoreMix } from '$lib/mix';
+  import { lang } from '$lib/stores/language';
+  import { bookmarks, removeBookmark } from '$lib/stores/study';
+  import type { Bookmark, ScriptureBook } from '$lib/types';
 
-  let { data } = $props<{ data: PageData }>();
-  let bookmarks = $state<Bookmark[]>([]);
-  $effect(() => { bookmarks = [...data.bookmarks]; });
+  let books = $state(new Map<string, ScriptureBook>());
+  const sorted = $derived([...$bookmarks].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 
-  async function remove(id: string) {
-    await studyDb.deleteBookmark(id);
-    bookmarks = bookmarks.filter(b => b.id !== id);
+  onMount(async () => {
+    books = new Map((await scriptureDb.getBooks()).map(b => [b.bookCode, b]));
+  });
+
+  function savedOn(iso: string): string {
+    return new Date(iso).toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
   }
 
-  function verseUrl(verseId: string) {
-    const [bookCode, chapter] = verseId.split('-');
-    return `${base}/bible/${bookCode}/${chapter}`;
-  }
-
-  function verseLabel(verseId: string) {
-    const [bookCode, chapter, verse] = verseId.split('-');
-    return `${bookCode} ${chapter}:${verse}`;
+  function open(bookmark: Bookmark) {
+    restoreMix(bookmark.passages);
+    goto(`${base}/`);
   }
 </script>
 
@@ -36,17 +44,19 @@
 
   <StorageNotice />
 
-  {#if bookmarks.length === 0}
-    <EmptyState title="No bookmarks yet" description="Star a verse while reading to bookmark it." icon="★" />
+  {#if sorted.length === 0}
+    <EmptyState title="No bookmarks yet" description="On the Today page, choose Bookmark to save the current mix here." icon="★" />
   {:else}
-    <div class="space-y-2">
-      {#each bookmarks as bm (bm.id)}
-        <div class="card p-4 flex items-center gap-3">
-          <a href={verseUrl(bm.verseId)} class="flex-1 font-serif text-stone-800 hover:text-primary">
-            {verseLabel(bm.verseId)}
-            {#if bm.label}<span class="text-stone-500 text-sm ml-2">— {bm.label}</span>{/if}
-          </a>
-          <button onclick={() => remove(bm.id)} class="text-stone-400 hover:text-red-500 text-sm" title="Remove">✕</button>
+    <div class="space-y-3">
+      {#each sorted as bookmark (bookmark.id)}
+        <div class="card flex items-start gap-3 p-4 hover:border-primary/40 hover:shadow-md transition-all">
+          <button class="flex-1 min-w-0 text-left group" onclick={() => open(bookmark)}>
+            <span class="block font-serif font-semibold text-stone-800 group-hover:text-primary">{savedOn(bookmark.createdAt)}</span>
+            <span class="mt-1 block text-sm text-stone-600">
+              {bookmark.passages.map(p => citation(p, books.get(p.bookCode), $lang)).join(' • ')}
+            </span>
+          </button>
+          <button class="text-stone-400 hover:text-red-500 text-sm" aria-label="Remove bookmark" onclick={() => removeBookmark(bookmark.id)}>✕</button>
         </div>
       {/each}
     </div>

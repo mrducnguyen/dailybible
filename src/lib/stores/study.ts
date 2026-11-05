@@ -1,7 +1,8 @@
 import { get, writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { studyDb } from '$lib/db/study';
-import type { Highlight, Note } from '$lib/types';
+import type { MixPassage } from '$lib/mix';
+import type { Bookmark, Highlight, Note } from '$lib/types';
 
 export interface SelectedSegment {
   verseId: string;
@@ -12,14 +13,26 @@ export interface SelectedSegment {
   verseText: string;
 }
 
+export const bookmarks = writable<Bookmark[]>([]);
 export const highlights = writable<Highlight[]>([]);
 export const notes = writable<Note[]>([]);
 /** The verse whose note is open in the editor. */
 export const noteTarget = writable<string | null>(null);
 
 if (browser) {
+  studyDb.getBookmarks().then(bookmarks.set);
   studyDb.getHighlights().then(highlights.set);
   studyDb.getNotes().then(notes.set);
+}
+
+export async function addBookmark(passages: MixPassage[]): Promise<void> {
+  const created = await studyDb.createBookmark(passages);
+  bookmarks.update(all => [...all, created]);
+}
+
+export async function removeBookmark(id: string): Promise<void> {
+  await studyDb.deleteBookmark(id);
+  bookmarks.update(all => all.filter(b => b.id !== id));
 }
 
 export function openNote(verseId: string): void {

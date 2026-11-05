@@ -1,4 +1,5 @@
 import { openDB, type IDBPDatabase } from 'idb';
+import type { MixPassage } from '$lib/mix';
 import type { Bookmark, Highlight, Note } from '$lib/types';
 
 const DB_NAME = 'dailybible-study';
@@ -26,10 +27,11 @@ export const studyDb = {
   // Bookmarks
   async getBookmarks(): Promise<Bookmark[]> {
     const bookmarks: Bookmark[] = await (await getDb()).getAll('bookmarks');
-    return bookmarks.filter(b => typeof b.verseId === 'string');
+    // Records from when bookmarks were single verses have no passages.
+    return bookmarks.filter(b => Array.isArray(b.passages));
   },
-  async createBookmark(verseId: string, label?: string): Promise<Bookmark> {
-    const bm: Bookmark = { id: uuid(), userId: 'local', verseId, label, createdAt: now() };
+  async createBookmark(passages: MixPassage[]): Promise<Bookmark> {
+    const bm: Bookmark = { id: uuid(), userId: 'local', passages, createdAt: now() };
     await (await getDb()).put('bookmarks', bm);
     return bm;
   },

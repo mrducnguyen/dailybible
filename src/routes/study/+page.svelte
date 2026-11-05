@@ -10,7 +10,7 @@
   <StorageNotice />
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     {#each [
-      { href: base + '/study/bookmarks', icon: '★', label: 'Bookmarks', description: 'Your saved verses' },
+      { href: base + '/study/bookmarks', icon: '★', label: 'Bookmarks', description: 'Your saved mixes' },
       { href: base + '/study/highlights', icon: '🖊', label: 'Highlights', description: 'Highlighted passages' },
       { href: base + '/study/notes', icon: '✏️', label: 'Notes', description: 'Your verse notes' }
     ] as item}

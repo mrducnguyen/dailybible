@@ -3,38 +3,12 @@
   import type { PageData } from './$types';
   import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import Spinner from '$lib/components/ui/Spinner.svelte';
-  import { studyDb } from '$lib/db/study';
   import { browser } from '$app/environment';
   import VerseText from '$lib/components/VerseText.svelte';
   import { lang } from '$lib/stores/language';
   import { notes, openNote } from '$lib/stores/study';
 
   let { data } = $props<{ data: PageData }>();
-  let bookmarkedVerses = $state<Set<string>>(new Set());
-  let initialized = $state(false);
-
-  $effect(() => {
-    if (browser && data.verses.length) {
-      studyDb.getBookmarks().then(bms => {
-        bookmarkedVerses = new Set(bms.map(b => b.verseId));
-        initialized = true;
-      });
-    }
-  });
-
-  async function toggleBookmark(verseId: string) {
-    if (bookmarkedVerses.has(verseId)) {
-      const bms = await studyDb.getBookmarks();
-      const existing = bms.find(b => b.verseId === verseId);
-      if (existing) await studyDb.deleteBookmark(existing.id);
-      bookmarkedVerses.delete(verseId);
-    } else {
-      await studyDb.createBookmark(verseId);
-      bookmarkedVerses.add(verseId);
-    }
-    bookmarkedVerses = new Set(bookmarkedVerses);
-  }
-
   const noteFor = (verseId: string) => $notes.find(n => n.verseId === verseId);
 
   let prevChapter = $derived(data.chapter > 1 ? data.chapter - 1 : null);
@@ -81,11 +55,6 @@
               onclick={() => openNote(verse.id)}
               title={noteFor(verse.id) ? 'Edit note' : 'Add a note'}
               aria-label={noteFor(verse.id) ? 'Edit note' : 'Add a note'}>✎</button>
-            <button class="text-stone-400 hover:text-yellow-500"
-              onclick={() => toggleBookmark(verse.id)}
-              title={bookmarkedVerses.has(verse.id) ? 'Remove bookmark' : 'Bookmark this verse'}>
-              {bookmarkedVerses.has(verse.id) ? '★' : '☆'}
-            </button>
           </div>
         </div>
       {/each}

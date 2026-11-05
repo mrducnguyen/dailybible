@@ -1,3 +1,5 @@
+import type { MixPassage } from '$lib/mix';
+
 export interface ScriptureBook {
   id: string;
   bookCode: string;
@@ -22,8 +24,8 @@ export interface ScriptureVerse {
 export interface Bookmark {
   id: string;
   userId: string;
-  verseId: string;
-  label?: string;
+  /** The saved mix. */
+  passages: MixPassage[];
   createdAt: string;
 }
 
